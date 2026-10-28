@@ -1,0 +1,22 @@
+# Secretos
+.env
+
+# Sesión de MercadoLibre y archivos de diagnóstico
+data/
+
+# Capturas generadas por el scraper
+static/respaldos/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Editores / SO
+.vscode/
+.idea/
+.claude/
+Thumbs.db
+.DS_Store

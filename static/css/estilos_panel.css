@@ -1,0 +1,55 @@
+/* static/css/estilos_panel.css */
+body { 
+    background-color: #f4f7f6; 
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+}
+
+/* Tarjetas de Análisis Estadístico */
+.card-analisis { 
+    border: none; 
+    border-radius: 15px; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+    border-top: 5px solid #198754; 
+    transition: transform 0.2s;
+}
+.card-analisis:hover { transform: translateY(-5px); }
+
+/* Filtros */
+.card-filter { 
+    border: none; 
+    border-radius: 15px; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+}
+
+/* Tabla y Filas */
+.table img { 
+    width: 70px; 
+    height: 50px; 
+    object-fit: cover; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    transition: 0.2s; 
+}
+.table img:hover { transform: scale(1.1); }
+.fila-seleccionada { background-color: #fff4f4 !important; }
+
+/* Favoritos */
+.btn-fav { 
+    color: #ccc; 
+    cursor: pointer; 
+    font-size: 1.2rem; 
+    transition: 0.2s; 
+}
+.btn-fav.active { color: #ffc107; }
+
+/* Textos Técnicos */
+.text-clp, .valor-tecnico { 
+    color: #6c757d; 
+    font-size: 0.85rem; 
+    display: block; 
+}
+.badge-region { 
+    font-size: 0.7rem; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px; 
+}

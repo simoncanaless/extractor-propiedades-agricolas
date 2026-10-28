@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriPanel Pro - IA Extractor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f4f6f9; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .card-extractor { max-width: 650px; width: 100%; border: none; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        #loading-zone { display: none; }
+        .spinner-grow { width: 3rem; height: 3rem; }
+        .progress { height: 25px; border-radius: 10px; background-color: #e9ecef; }
+        .progress-bar { transition: width 0.4s ease; font-weight: bold; font-size: 1rem; }
+        textarea { resize: vertical; border-radius: 10px !important; }
+    </style>
+</head>
+<body>
+
+<div class="card-extractor bg-white p-5 text-center">
+    <h2 class="fw-bold text-success mb-3"><i class="bi bi-textarea-t"></i> AgriPanel Pro</h2>
+    <p class="text-muted mb-4">Selecciona el portal de origen e ingresa los enlaces (uno por línea) para extraer los datos.</p>
+    
+    <div id="form-zone">
+        
+        <div class="mb-3 text-start">
+            <label class="form-label fw-bold small text-muted"><i class="bi bi-globe"></i> Portal de Origen</label>
+            <select id="portal_origen" class="form-select bg-light shadow-none fw-bold text-success border-0">
+                <option value="portalinmobiliario">Portal Inmobiliario (MercadoLibre)</option>
+                <option value="contactospropiedades">Contactos Propiedades</option>
+                <option value="ipropiedadesagricolas">iPropiedades Agrícolas</option>
+            </select>
+        </div>
+
+        <div class="mb-4 text-start">
+            <label class="form-label fw-bold small text-muted"><i class="bi bi-link-45deg"></i> Lista de Enlaces (URLs)</label>
+            <textarea id="url_busqueda" class="form-control bg-light shadow-none" rows="6" placeholder="Pega los enlaces aquí. Uno por línea..." required></textarea>
+        </div>
+        <div class="d-grid gap-2">
+            <button class="btn btn-success btn-lg fw-bold shadow-sm" onclick="extraerPropiedad()">
+                <i class="bi bi-robot"></i> Iniciar Extracción
+            </button>
+            <a href="/resultados" class="btn btn-outline-secondary mt-2">Ir directo al Panel</a>
+        </div>
+        <div id="error-msg" class="alert alert-danger mt-3 fw-bold small py-2" style="display:none;"></div>
+    </div>
+
+    <div id="loading-zone" class="py-4">
+        <div class="spinner-grow text-success mb-3" role="status"><span class="visually-hidden">Cargando...</span></div>
+        <h5 class="fw-bold text-dark mb-3">🤖 Procesando cola de enlaces...</h5>
+        <div class="progress mb-3 shadow-sm"><div id="progress-bar" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;">0%</div></div>
+        <p class="text-muted fw-bold mb-1" id="loading-status">Analizando propiedad 1 de X...</p>
+        <p class="text-secondary small" id="loading-text">Descargando datos y leyendo descripción con IA.</p>
+    </div>
+</div>
+
+<script>
+    async function extraerPropiedad() {
+        const urlInput = document.getElementById('url_busqueda').value;
+        const portalSeleccionado = document.getElementById('portal_origen').value;
+        const errorMsg = document.getElementById('error-msg');
+        
+        const links = urlInput.split('\n').map(l => l.trim()).filter(l => l.startsWith('http'));
+
+        if(links.length === 0) {
+            errorMsg.innerHTML = "<i class='bi bi-exclamation-triangle-fill'></i> Ingresa al menos un enlace válido.";
+            errorMsg.style.display = "block"; return;
+        }
+
+        document.getElementById('form-zone').style.display = 'none';
+        document.getElementById('loading-zone').style.display = 'block';
+        errorMsg.style.display = "none";
+
+        const progressBar = document.getElementById('progress-bar');
+        const loadingStatus = document.getElementById('loading-status');
+        const loadingText = document.getElementById('loading-text');
+
+        let procesados = 0; let errores = 0;
+
+        for (let i = 0; i < links.length; i++) {
+            const url = links[i];
+            loadingStatus.innerText = `Analizando propiedad ${i + 1} de ${links.length}`;
+            loadingText.innerText = `Extrayendo de ${portalSeleccionado} y enviando a Gemini...`;
+            
+            try {
+                // AHORA ENVIAMOS EL PORTAL TAMBIÉN
+                const response = await fetch('/extraer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url_busqueda: url, portal: portalSeleccionado })
+                });
+                const data = await response.json();
+                if (!data.success) { console.error("Fallo:", url, data.message); errores++; }
+            } catch (e) { console.error("Error de red:", url, e); errores++; }
+
+            procesados++;
+            let porcentaje = Math.round((procesados / links.length) * 100);
+            progressBar.style.width = `${porcentaje}%`; progressBar.innerText = `${porcentaje}%`;
+
+            if (i < links.length - 1) {
+                loadingText.innerHTML = "<i class='bi bi-shield-lock-fill text-warning'></i> Pausa de seguridad anti-bloqueo (4 seg)...";
+                await new Promise(resolve => setTimeout(resolve, 4000));
+            }
+        }
+
+        if (errores === links.length) {
+            document.getElementById('form-zone').style.display = 'block'; document.getElementById('loading-zone').style.display = 'none';
+            errorMsg.innerHTML = "<i class='bi bi-x-circle-fill'></i> Todos los enlaces fallaron."; errorMsg.style.display = "block";
+        } else {
+            loadingStatus.innerText = "¡Todo listo!"; loadingText.innerText = "Redirigiendo al panel...";
+            window.location.href = '/resultados?t=' + new Date().getTime();
+        }
+    }
+</script>
+
+</body>
+</html>
